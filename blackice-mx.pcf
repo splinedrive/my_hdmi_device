@@ -1,0 +1,43 @@
+#Constraint File for myStorm BlackIce Mx
+
+# Onboard 25Mhz oscillator
+set_io clk_25mhz 60
+
+# tmds signales
+# red
+#set_io hdmi_p[0] 138 
+#set_io hdmi_n[0] 139 
+## green
+#set_io hdmi_p[1] 141
+#set_io hdmi_n[1] 142 
+## blue
+#set_io hdmi_p[2] 136 
+#set_io hdmi_n[2] 137
+##clk
+#set_io hdmi_p[3] 134
+#set_io hdmi_n[3] 135
+
+# red
+set_io hdmi_p[0] 3 
+set_io hdmi_n[0] 4 
+# green
+set_io hdmi_p[1] 1
+set_io hdmi_n[1] 2 
+# blue
+set_io hdmi_p[2] 143 
+set_io hdmi_n[2] 144
+#clk
+set_io hdmi_p[3] 7
+set_io hdmi_n[3] 8
+set_io --warn-no-port led[0] 34
+set_io --warn-no-port led[1] 33
+set_io --warn-no-port led[2] 29
+set_io --warn-no-port led[3] 28
+set_io --warn-no-port led[4] 38
+set_io --warn-no-port led[5] 37
+set_io --warn-no-port led[6] 32
+set_io --warn-no-port led[7] 31
+set_io --warn-no-port led1[0]  49
+set_io --warn-no-port led1[1]  48
+set_io --warn-no-port led1[2]  55
+set_io --warn-no-port led1[3]  56
