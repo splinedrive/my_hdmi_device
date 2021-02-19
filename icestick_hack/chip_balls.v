@@ -45,11 +45,18 @@ localparam frame_rate        = 60;
 wire clk_x5;
 wire tmds_clk = clk_x5;
 
-wire clk_125, locked;
+wire locked;
+wire pclk;
 
 pll pll_i(clk_12mhz /* 12 MHz h1x*/, clk_x5, locked);
 
-clk_divn #(3, 5) clk_divn_25mhz(clk_x5, 1'b0, pclk);
+
+reg [4:0] clk_25mhz = 5'b000_11;
+always @(posedge clk_x5) begin
+  clk_25mhz <= {clk_25mhz[0], clk_25mhz[4:1]};
+end
+assign pclk = clk_25mhz[0];
+//clk_div #(3, 5) clk_divn_25mhz(clk_x5, 1'b0, pclk);
 
 wire [10:0] hcnt;
 wire [10:0] vcnt;
@@ -134,15 +141,15 @@ always @(posedge pclk) begin
     vga_vsync <= vsync;
 
     if (~blank) begin
-      vga_red   <= vga_red_test>>1   | (|draw_ball[0:0] ? 8'hff : 8'h0);
-      vga_green <= vga_green_test>>1 ;//| (|draw_ball[1:1] ? 8'hff : 8'h0);
-      vga_blue  <= vga_blue_test>>1  | (|draw_ball[1:1] ? 8'hff : 8'h0);
+        vga_red   <= vga_red_test>>1   | (|draw_ball[0:0] ? 8'hff : 8'h0);
+        vga_green <= vga_green_test>>1 ;//| (|draw_ball[1:1] ? 8'hff : 8'h0);
+        vga_blue  <= vga_blue_test>>1  | (|draw_ball[1:1] ? 8'hff : 8'h0);
 
     end
     else begin
-      vga_red <= 8'h0;
-      vga_blue <= 8'h0;
-      vga_green <= 8'h0;
+        vga_red <= 8'h0;
+        vga_blue <= 8'h0;
+        vga_green <= 8'h0;
     end
 end
 
@@ -179,70 +186,77 @@ generate
     end
 endgenerate
 endmodule
-/**
- * PLL configuration
- *
- * This Verilog module was generated automatically
- * using the icepll tool from the IceStorm project.
- * Use at your own risk.
- *
- * Given input frequency:        12.000 MHz
- * Requested output frequency:  125.000 MHz
- * Achieved output frequency:   124.500 MHz
- */
+    /**
+     * PLL configuration
+     *
+     * This Verilog module was generated automatically
+     * using the icepll tool from the IceStorm project.
+     * Use at your own risk.
+     *
+     * Given input frequency:        12.000 MHz
+     * Requested output frequency:  125.000 MHz
+     * Achieved output frequency:   124.500 MHz
+     */
 
-module pll(
+    module pll(
         input  clock_in,
         output clock_out,
         output locked
-        );
+    );
 
 SB_PLL40_CORE #(
-                .FEEDBACK_PATH("SIMPLE"),
-                .DIVR(4'b0000),         // DIVR =  0
-                .DIVF(7'b1010010),      // DIVF = 82
-                .DIVQ(3'b011),          // DIVQ =  3
-                .FILTER_RANGE(3'b001)   // FILTER_RANGE = 1
-        ) uut (
-                .LOCK(locked),
-                .RESETB(1'b1),
-                .BYPASS(1'b0),
-                .REFERENCECLK(clock_in),
-                .PLLOUTCORE(clock_out)
-                );
+                  .FEEDBACK_PATH("SIMPLE"),
+                  .DIVR(4'b0000),         // DIVR =  0
+                  .DIVF(7'b1010010),      // DIVF = 82
+                  .DIVQ(3'b011),          // DIVQ =  3
+                  .FILTER_RANGE(3'b001)   // FILTER_RANGE = 1
+              ) uut (
+                  .LOCK(locked),
+                  .RESETB(1'b1),
+                  .BYPASS(1'b0),
+                  .REFERENCECLK(clock_in),
+                  .PLLOUTCORE(clock_out)
+              );
 
 endmodule
 
-module clk_divn #(
-  parameter WIDTH = 3,
-  parameter N = 5)
+    module clk_div #(
+        parameter WIDTH = 3,
+        parameter N = 5)
+    (
+        input clk,
+        input reset,
+        output div_clk
+    );
+begin
+    reg [WIDTH-1:0] pos_count;
+    reg [WIDTH-1:0] neg_count;
 
-  (clk,reset, clk_out);
+    wire tick_p = pos_count == (N-1);
+    wire tick_n = neg_count == (N-1);
 
-  input clk;
-  input reset;
-  output clk_out;
+    always @(posedge clk) begin
+        if (reset) begin
+            pos_count <= 0;
+        end else begin
+            pos_count <= (tick_p) ? 0 : pos_count +1;
+        end
+    end
 
-  reg [WIDTH-1:0] pos_count, neg_count;
-  wire [WIDTH-1:0] r_nxt;
+    always @(negedge clk) begin
+        if (reset) begin
+            neg_count <= 0;
+        end else begin
+            neg_count <= (tick_n) ? 0 : neg_count +1;
+        end
+    end
 
-  always @(posedge clk)
-    if (reset)
-      pos_count <=0;
-    else if (pos_count ==N-1) pos_count <= 0;
-    else pos_count<= pos_count +1;
-
-    always @(negedge clk)
-      if (reset)
-        neg_count <=0;
-      else  if (neg_count ==N-1) neg_count <= 0;
-      else neg_count<= neg_count +1;
-
-      assign clk_out = ((pos_count > (N>>1)) | (neg_count > (N>>1)));
+    assign div_clk = ((pos_count > (N>>1)) | (neg_count > (N>>1)));
+end
 endmodule
 
-// LVDS Double Data RAGE (DDR) Output
-module SB_LVCMOS(input DP, input DN, input clk_x5, input [1:0] tmds_signal);
+    // LVDS Double Data RAGE (DDR) Output
+    module SB_LVCMOS(input DP, input DN, input clk_x5, input [1:0] tmds_signal);
 defparam tmds_p.PIN_TYPE = 6'b010000;
 defparam tmds_p.IO_STANDARD = "SB_LVCMOS";
 SB_IO tmds_p (

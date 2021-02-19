@@ -13,12 +13,20 @@ and learn from top module and you are prepared for the next project.
 This code runs on blackicemx and ulx3s-85F (but you are able to adjust the Makefile and generating lesser balls).
 I don't want to go deep in thing, because I want to learn many fpga designs in the future. But you have to start with the basics first.
 
+I have used this pmod for ice40 based fpgas: https://github.com/Wren6991/DVI-PMOD
+
+Todo: hdmi-audio (island)
+
 just do for ulx3s:
 make prog
 
 and for blackicemx:
 
 make -f Makefile.blackicemx prog
+
+and for icestick:
+cd icestick__hack
+make prog
 
 Have fun!
 
