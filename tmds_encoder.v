@@ -27,6 +27,7 @@ module tmds_encoder(
            input C0,
            output reg[9:0] q_out = 0
        );
+parameter LEGACY_DVI_CONTROL_LUT = 0;
 
 function [3:0] N0;
     input [7:0] d;
@@ -121,13 +122,22 @@ always @(posedge clk) begin
 
     end else begin
         /* !DE */
-
         cnt <= 0;
+        /* hsync -> c0 | vsync -> c1 */
         case ({C1, C0})
+`ifdef LEGACY_DVI_CONTROL_LUT
+            /* dvi control data lut */
             2'b00: q_out <= 10'b00101_01011;
             2'b01: q_out <= 10'b11010_10100;
             2'b10: q_out <= 10'b00101_01010;
             2'b11: q_out <= 10'b11010_10101;
+`else
+            /* hdmi control data period */
+            2'b00: q_out <= 10'b1101010100;
+            2'b01: q_out <= 10'b0010101011;
+            2'b10: q_out <= 10'b0101010100;
+            2'b11: q_out <= 10'b1010101011;
+`endif
         endcase
 
     end /* DE */
