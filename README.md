@@ -17,14 +17,18 @@ I have used this pmod for ice40 based fpgas: https://github.com/Wren6991/DVI-PMO
 
 Todo: hdmi-audio (island)
 
-just do for ulx3s:
+ulx3s:
 make prog
 
-and for blackicemx:
+blackicemx:
 
 make -f Makefile.blackicemx prog
 
-and for icestick:
+icoboard:
+
+make -f Makefile.icoboard prog
+
+icestick:
 cd icestick__hack
 make prog
 

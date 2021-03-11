@@ -15,19 +15,32 @@ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
-module chip_balls(
-           input clk_25mhz,
+
+`ifdef ICOBOARD
+  `define HX8X
+`endif
 `ifdef BLACKICE_MX
+  `define HX8X
+`endif
+module chip_balls(
+`ifdef ICOBOARD
+           input clk_100mhz,
+           output [3:0] hdmi_p,
+           output [3:0] hdmi_n,
+           output reg [7:0] led,
+           output reg [2:0] led1 = 4'b101
+`elsif BLACKICE_MX
+           input clk_25mhz,
            output [3:0] hdmi_p,
            output [3:0] hdmi_n,
            output reg [7:0] led,
            output reg [3:0] led1 = 4'b1001
-       );
 `else
+           input clk_25mhz,
            output [3:0] gpdi_dp,
            output [7:0] led
-       );
 `endif
+       );
 
 reg [7:0] vga_red;
 reg [7:0] vga_blue;
@@ -38,7 +51,7 @@ reg vga_vsync;
 reg vga_blank;
 
 localparam SYSTEM_CLK_MHZ = 25;
-`ifdef BLACKICE_MX
+`ifdef HX8X
 localparam DDR_HDMI_TRANSFER = 1;
 `else /* ulx3s */
 localparam DDR_HDMI_TRANSFER = 1;
@@ -56,7 +69,7 @@ localparam frame_rate        = 60;
 wire clk_x5;
 wire tmds_clk = clk_x5;
 wire pclk = clk_25mhz;
-
+wire locked;
 SB_PLL40_CORE #(
                   .FEEDBACK_PATH ("SIMPLE"),
                   .DIVR (4'b0000),
@@ -69,6 +82,18 @@ SB_PLL40_CORE #(
                   .REFERENCECLK   (clk_25mhz),
                   .PLLOUTGLOBAL   (clk_x5) // 5xpclk = 125MHz tmds clock
               );
+`elsif ICOBOARD
+wire clk_x5;
+wire tmds_clk = clk_x5;
+wire pclk = clk_25mhz;
+wire locked;
+pll125 pll125_i(clk_100mhz, clk_x5, locked);
+reg [4:0] clk_25mhz = 5'b000_11;
+always @(posedge clk_x5) begin
+    clk_25mhz <= {clk_25mhz[0], clk_25mhz[4:1]};
+end
+assign pclk = clk_25mhz[0];
+
 `else /* ulx3s */
 wire clk_locked;
 wire [3:0] clocks;
@@ -126,7 +151,7 @@ my_vga_clk_generator
         .reset_n(1'b1)
     );
 
-`ifdef  BLACKICE_MX
+`ifdef HX8X
 wire clk = clk_25mhz;
 reg [0:31] count = 0;
 wire tick = (count == SYSTEM_CLK_MHZ * 1000_0);
@@ -164,7 +189,7 @@ assign   led = {8{toogle}};
 `endif
 
 /* */
-`ifdef BLACKICE_MX
+`ifdef HX8X
 localparam N = 20;
 `else
 localparam N = 35;
@@ -249,7 +274,7 @@ always @(posedge pclk) begin
     vga_vsync <= vsync;
 
     if (~blank) begin
-    `ifdef BLACKICE_MX
+    `ifdef HX8X
         vga_red   <= vga_red_test>>1   | (stars | |draw_ball[6:0] | |draw_ball[9:0] | (&vcnt[4:0]|&hcnt[4:0]) ? 8'hff : 8'h0);
         vga_green <= vga_green_test>>1 | (stars | |draw_ball[15:7] ? 8'hff : 8'h0);
         vga_blue  <= vga_blue_test>>1  | (stars | |draw_ball[19:16] | (&vcnt[4:0]|&hcnt[4:0]) ? 8'hff : 8'h0);
@@ -290,7 +315,7 @@ hdmi_device #(.DDR_ENABLED(DDR_HDMI_TRANSFER)) hdmi_device_i(
                 out_tmds_clk
             );
 
-`ifdef BLACKICE_MX
+`ifdef HX8X
 generate
     if (DDR_HDMI_TRANSFER) begin /* we have no other choice as DDR */
         SB_LVCMOS SB_LVCMOS_RED   (.DP(hdmi_p[2]), .DN(hdmi_n[2]), .clk_x5(tmds_clk), .tmds_signal(out_tmds_red));
@@ -318,7 +343,7 @@ endgenerate
 
 endmodule
 
-`ifdef BLACKICE_MX
+`ifdef HX8X
     // LVDS Double Data RAGE (DDR) Output
     module SB_LVCMOS(input DP, input DN, input clk_x5, input [1:0] tmds_signal);
 defparam tmds_p.PIN_TYPE = 6'b010000;
@@ -344,5 +369,40 @@ SB_IO tmds_n (
       );
 // D_OUT_0 and D_OUT_1 swapped?
 // https://github.com/YosysHQ/yosys/issues/330
+endmodule
+`endif
+`ifdef ICOBOARD
+    /**
+     * PLL configuration
+     *
+     * This Verilog module was generated automatically
+     * using the icepll tool from the IceStorm project.
+     * Use at your own risk.
+     *
+     * Given input frequency:       100.000 MHz
+     * Requested output frequency:  125.000 MHz
+     * Achieved output frequency:   125.000 MHz
+     */
+
+    module pll125(
+        input  clock_in,
+        output clock_out,
+        output locked
+    );
+
+SB_PLL40_CORE #(
+                  .FEEDBACK_PATH("SIMPLE"),
+                  .DIVR(4'b0000),         // DIVR =  0
+                  .DIVF(7'b0001001),      // DIVF =  9
+                  .DIVQ(3'b011),          // DIVQ =  3
+                  .FILTER_RANGE(3'b101)   // FILTER_RANGE = 5
+              ) uut (
+                  .LOCK(locked),
+                  .RESETB(1'b1),
+                  .BYPASS(1'b0),
+                  .REFERENCECLK(clock_in),
+                  .PLLOUTCORE(clock_out)
+              );
+
 endmodule
 `endif
