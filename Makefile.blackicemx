@@ -10,7 +10,7 @@ VERILOG_FILES = tmds_encoder.v \
 all: $(PROJ).rpt $(PROJ).bin
 
 %.blif: %.v
-	yosys -DBLACKICE_MX -DBLACKICE_MX -DBLACKICE_MX -DBLACKICE_MX -DBLACKICE_MX -DBLACKICE_MX -DBLACKICE_MX -DBLACKICE_MX -DBLACKICE_MX -p 'synth_ice40 -top $(PROJ) -json $(PROJ).json -blif $@' ${VERILOG_FILES} $<
+	yosys -DBLACKICE_MX -p 'synth_ice40 -top $(PROJ) -json $(PROJ).json -blif $@' ${VERILOG_FILES} $<
 
 %.asc: $(PIN_DEF) %.blif
 	nextpnr-ice40 -r --$(DEVICE) --package tq144:4k  --json $(PROJ).json --asc $(PROJ).asc --opt-timing --pcf $(PIN_DEF)

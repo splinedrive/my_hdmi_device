@@ -15,7 +15,6 @@ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
-
 `ifdef ICOBOARD
   `define HX8X
 `endif
@@ -35,6 +34,11 @@ module chip_balls(
            output [3:0] hdmi_n,
            output reg [7:0] led,
            output reg [3:0] led1 = 4'b1001
+`elsif ARTY7
+           input clk_100mhz,
+           output [3:0] hdmi_p,
+           output [3:0] hdmi_n,
+           output [3:0] led
 `else
            input clk_25mhz,
            output [3:0] gpdi_dp,
@@ -53,6 +57,8 @@ reg vga_blank;
 localparam SYSTEM_CLK_MHZ = 25;
 `ifdef HX8X
 localparam DDR_HDMI_TRANSFER = 1;
+`elsif ARTY7
+localparam DDR_HDMI_TRANSFER = 0;
 `else /* ulx3s */
 localparam DDR_HDMI_TRANSFER = 1;
 `endif
@@ -93,6 +99,25 @@ always @(posedge clk_x5) begin
     clk_25mhz <= {clk_25mhz[0], clk_25mhz[4:1]};
 end
 assign pclk = clk_25mhz[0];
+`elsif ARTY7
+
+wire clk_25mhz;
+wire clk_x5;
+wire tmds_clk = clk_x5;
+wire pclk = clk_25mhz;
+wire locked;
+
+clk_tmds
+    #(
+        .DDR_ENABLED(DDR_HDMI_TRANSFER)
+    )
+    clk_tmds_i
+    (
+        clk_x5,
+        clk_25mhz,
+        clk_100mhz
+    );
+
 
 `else /* ulx3s */
 wire clk_locked;
@@ -174,13 +199,25 @@ always @(posedge clk) begin
         led1 <= led1 ^ 4'b1111;
     end
 end
+`elsif ARTY7
+reg [31:0] frame_cnt = 0;
+wire new_frame = (vcnt == 0 && hcnt == 0) ;
+wire fps = frame_cnt == 59;
+reg toogle;
+always @(posedge pclk) begin
+    if (new_frame) frame_cnt <= fps ? 0 : frame_cnt + 1;
+    //toogle <= fps ? !toogle : toogle;
+    toogle <= toogle ^ fps;
+end
+
+assign led = {4{toogle}};
 `else /* ulx3s */
 reg [31:0] frame_cnt = 0;
 wire new_frame = (vcnt == 0 && hcnt == 0) ;
 wire fps = frame_cnt == 59;
 reg toogle;
 always @(posedge pclk) begin
-    if (new_frame) frame_cnt <= (frame_cnt == 59) ? 0 : frame_cnt + 1;
+    if (new_frame) frame_cnt <= fps ? 0 : frame_cnt + 1;
     //toogle <= fps ? !toogle : toogle;
     toogle <= toogle ^ fps;
 end
@@ -324,6 +361,78 @@ generate
         SB_LVCMOS SB_LVCMOS_CLK   (.DP(hdmi_p[3]), .DN(hdmi_n[3]), .clk_x5(tmds_clk), .tmds_signal(out_tmds_clk));
     end
 endgenerate
+`elsif ARTY7
+generate if (!DDR_HDMI_TRANSFER) begin
+        OBUFDS OBUFDS_clock     (.I(out_tmds_clk),    .O(hdmi_p[3]), .OB(hdmi_n[3]));
+        OBUFDS OBUFDS_red       (.I(out_tmds_red),    .O(hdmi_p[2]), .OB(hdmi_n[2]));
+        OBUFDS OBUFDS_green     (.I(out_tmds_green),  .O(hdmi_p[1]), .OB(hdmi_n[1]));
+        OBUFDS OBUFDS_blue      (.I(out_tmds_blue),   .O(hdmi_p[0]), .OB(hdmi_n[0]));
+    end else begin
+        wire out_ddr_tmds_clk;
+        ODDR
+            #(.DDR_CLK_EDGE   ("SAME_EDGE"), //"OPPOSITE_EDGE" "SAME_EDGE"
+              .INIT           (1'b0),
+              .SRTYPE         ("ASYNC")) oddr_clk
+            (
+                .D1( out_tmds_clk[0]  ),
+                .D2( out_tmds_clk[1]  ) ,
+                .C ( tmds_clk         ),
+                .CE( 1'b1             ),
+                .Q ( out_ddr_tmds_clk ),
+                .R ( 1'b0             ),
+                .S ( 1'b0             )
+            );
+        OBUFDS OBUFDS_clock(.I(out_ddr_tmds_clk), .O(hdmi_p[3]), .OB(hdmi_n[3]));
+
+        wire out_ddr_tmds_red;
+        ODDR
+            #(.DDR_CLK_EDGE   ("SAME_EDGE"), //"OPPOSITE_EDGE" "SAME_EDGE"
+              .INIT           (1'b0),
+              .SRTYPE         ("ASYNC")) oddr_red
+            (
+                .D1( out_tmds_red[0]  ),
+                .D2( out_tmds_red[1]  ),
+                .C ( tmds_clk         ),
+                .CE( 1'b1             ),
+                .Q ( out_ddr_tmds_red ),
+                .R ( 1'b0             ),
+                .S ( 1'b0             )
+            );
+        OBUFDS OBUFDS_red(.I(out_ddr_tmds_red), .O(hdmi_p[2]), .OB(hdmi_n[2]));
+
+        wire out_ddr_tmds_green;
+        ODDR
+            #(.DDR_CLK_EDGE   ("SAME_EDGE"), //"OPPOSITE_EDGE" "SAME_EDGE"
+              .INIT           (1'b0),
+              .SRTYPE         ("ASYNC")) oddr_green
+            (
+                .D1( out_tmds_green[0]   ),
+                .D2( out_tmds_green[1]   ),
+                .C ( tmds_clk            ),
+                .CE( 1'b1                ),
+                .Q ( out_ddr_tmds_green  ),
+                .R ( 1'b0                ),
+                .S ( 1'b0                )
+            );
+        OBUFDS OBUFDS_green(.I(out_ddr_tmds_green), .O(hdmi_p[1]), .OB(hdmi_n[1]));
+
+        wire out_ddr_tmds_blue;
+        ODDR
+            #(.DDR_CLK_EDGE   ("SAME_EDGE"), //"OPPOSITE_EDGE" "SAME_EDGE"
+              .INIT           (1'b0),
+              .SRTYPE         ("ASYNC")) oddr_blue
+            (
+                .D1( out_tmds_blue[0]   ),
+                .D2( out_tmds_blue[1]   ),
+                .C ( tmds_clk            ),
+                .CE( 1'b1                ),
+                .Q ( out_ddr_tmds_blue  ),
+                .R ( 1'b0                ),
+                .S ( 1'b0                )
+            );
+        OBUFDS OBUFDS_blue(.I(out_ddr_tmds_blue), .O(hdmi_p[0]), .OB(hdmi_n[0]));
+    end endgenerate
+
 `else
 /* ulx3s can SDR and DDR */
 generate
@@ -405,4 +514,118 @@ SB_PLL40_CORE #(
               );
 
 endmodule
+`endif
+`ifdef ARTY7
+
+    // 125MHz in DDR mode else 225 MHz and second clock always 25MHz
+`timescale 1ps/1ps
+
+    module clk_tmds
+
+    #(parameter DDR_ENABLED = 1)
+    (// Clock in ports
+        // Clock out ports
+        output        clk_out1,
+        output        clk_out2,
+        input         clk_in1
+    );
+// Input buffering
+//------------------------------------
+wire clk_in1_clk_tmds;
+wire clk_in2_clk_tmds;
+IBUF clkin1_ibufg
+     (.O (clk_in1_clk_tmds),
+      .I (clk_in1));
+
+// Clocking PRIMITIVE
+//------------------------------------
+
+// Instantiation of the MMCM PRIMITIVE
+//    * Unused inputs are tied off
+//    * Unused outputs are labeled unused
+
+wire        clk_out1_clk_tmds;
+wire        clk_out2_clk_tmds;
+wire        clk_out3_clk_tmds;
+wire        clk_out4_clk_tmds;
+wire        clk_out5_clk_tmds;
+wire        clk_out6_clk_tmds;
+wire        clk_out7_clk_tmds;
+
+wire [15:0] do_unused;
+wire        drdy_unused;
+wire        psdone_unused;
+wire        locked_int;
+wire        clkfbout_clk_tmds;
+wire        clkfbout_buf_clk_tmds;
+wire        clkfboutb_unused;
+wire clkout2_unused;
+wire clkout3_unused;
+wire clkout4_unused;
+wire        clkout5_unused;
+wire        clkout6_unused;
+wire        clkfbstopped_unused;
+wire        clkinstopped_unused;
+
+PLLE2_ADV
+    #(.BANDWIDTH            ("OPTIMIZED"),
+      .COMPENSATION         ("INTERNAL"),
+      .STARTUP_WAIT         ("FALSE"),
+      .DIVCLK_DIVIDE        (DDR_ENABLED ? 4 : 1),
+      .CLKFBOUT_MULT        (DDR_ENABLED ? 35 : 10),
+      .CLKFBOUT_PHASE       (0.000),
+      .CLKOUT0_DIVIDE       (DDR_ENABLED ? 7 : 4),
+      .CLKOUT0_PHASE        (0.000),
+      .CLKOUT0_DUTY_CYCLE   (0.500),
+      .CLKOUT1_DIVIDE       (DDR_ENABLED ? 35 : 40),
+      .CLKOUT1_PHASE        (0.000),
+      .CLKOUT1_DUTY_CYCLE   (0.500),
+      .CLKIN1_PERIOD        (10.000))
+    plle2_adv_inst
+    // Output clocks
+    (
+        .CLKFBOUT            (clkfbout_clk_tmds),
+        .CLKOUT0             (clk_out1_clk_tmds),
+        .CLKOUT1             (clk_out2_clk_tmds),
+        .CLKOUT2             (clkout2_unused),
+        .CLKOUT3             (clkout3_unused),
+        .CLKOUT4             (clkout4_unused),
+        .CLKOUT5             (clkout5_unused),
+        // Input clock control
+        .CLKFBIN           (clkfbout_clk_tmds),
+        .CLKIN1              (clk_in1_clk_tmds),
+        .CLKIN2              (1'b0),
+        // Tied to always select the primary input clock
+        .CLKINSEL            (1'b1),
+        // Ports for dynamic reconfiguration
+        .DADDR               (7'h0),
+        .DCLK                (1'b0),
+        .DEN                 (1'b0),
+        .DI                  (16'h0),
+        .DO                  (do_unused),
+        .DRDY                (drdy_unused),
+        .DWE                 (1'b0),
+        // Other control and status signals
+        .LOCKED              (locked_int),
+        .PWRDWN              (1'b0),
+        .RST                 (1'b0));
+
+// Clock Monitor clock assigning
+//--------------------------------------
+// Output buffering
+//-----------------------------------
+
+assign clkfbout_buf_clk_tmds = clkfbout_clk_tmds;
+
+
+BUFG clkout1_buf
+     (.O   (clk_out1),
+      .I   (clk_out1_clk_tmds));
+
+
+BUFG clkout2_buf
+     (.O   (clk_out2),
+      .I   (clk_out2_clk_tmds));
+endmodule
+
 `endif

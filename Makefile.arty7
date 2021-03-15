@@ -1,0 +1,29 @@
+PROJ=chip_balls
+PINOUT=Arty-A7-100-Master.xdc
+
+RM            = rm -rf
+VERILOG_FILES = chip_balls.v \
+								tmds_encoder.v \
+								my_vga_clk_generator.v \
+								ball.v \
+								hdmi_device.v \
+								lfsr.v\
+
+all: ${PROJ}.bit
+
+%.json: %.v
+	yosys -DARTY7 -p "synth_xilinx -flatten -abc9 -nobram -arch xc7 -top ${PROJ}; write_json ${PROJ}.json" ${VERILOG_FILES}
+
+%place_route: %.json
+#	nextpnr-ecp5 --json $< --textcfg $@ --85k --package CABGA381 --lpf ulx3s_v20.lpf
+	nextpnr-xilinx --timing-allow-fail --freq 250 --chipdb ${NEXTPNR_XILINX_DB}/xc7a100t.bin --xdc ${PINOUT} --json ${PROJ}.json --write ${PROJ}_routed.json --fasm ${PROJ}.fasm
+
+%.bit: %place_route
+	./build_arty7.sh ${PROJ}
+prog: ${PROJ}.bit
+	xc3sprog -c nexys4 $<
+
+clean:
+	$(RM) -f ${PROJ}.bit ${PROJ}.json ${PROJ}.fasm ${PROJ}.frame
+
+.PHONY: prog clean

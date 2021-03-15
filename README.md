@@ -32,6 +32,11 @@ icestick:
 cd icestick__hack
 make prog
 
+arty7:
+make -f Makefile.arty7 prog
+But doesn't work, just use vivado SDR/DDR is working
+just use `define ARTY7 in vivado
+
 Have fun!
 
 Hirosh
