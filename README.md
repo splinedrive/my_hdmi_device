@@ -37,6 +37,9 @@ make -f Makefile.arty7 prog
 But doesn't work, just use vivado SDR/DDR is working
 just use `define ARTY7 in vivado
 
+colorlighti5:
+make -f Makefile.colorlighti5 prog
+
 Have fun!
 
 Hirosh

@@ -15,6 +15,7 @@ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
+//`define ARTY7 
 `ifdef ICOBOARD
   `define HX8X
 `endif
@@ -39,6 +40,10 @@ module chip_balls(
            output [3:0] hdmi_p,
            output [3:0] hdmi_n,
            output [3:0] led
+`elsif COLORLIGHTI5
+           input clk_25mhz,
+           output [3:0] gpdi_dp,
+           output led
 `else
            input clk_25mhz,
            output [3:0] gpdi_dp,
@@ -58,7 +63,7 @@ localparam SYSTEM_CLK_MHZ = 25;
 `ifdef HX8X
 localparam DDR_HDMI_TRANSFER = 1;
 `elsif ARTY7
-localparam DDR_HDMI_TRANSFER = 0;
+localparam DDR_HDMI_TRANSFER = 1;
 `else /* ulx3s */
 localparam DDR_HDMI_TRANSFER = 1;
 `endif
@@ -211,6 +216,17 @@ always @(posedge pclk) begin
 end
 
 assign led = {4{toogle}};
+`elsif COLORLIGHTI5
+reg [31:0] frame_cnt = 0;
+wire new_frame = (vcnt == 0 && hcnt == 0) ;
+wire fps = frame_cnt == 59;
+reg toogle = 1'b1;
+always @(posedge pclk) begin
+    if (new_frame) frame_cnt <= fps ? 0 : frame_cnt + 1;
+    toogle <= toogle ^ fps;
+end
+
+assign led = toogle;
 `else /* ulx3s */
 reg [31:0] frame_cnt = 0;
 wire new_frame = (vcnt == 0 && hcnt == 0) ;
