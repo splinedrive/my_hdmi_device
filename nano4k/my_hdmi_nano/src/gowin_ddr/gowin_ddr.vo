@@ -1,0 +1,42 @@
+//Copyright (C)2014-2021 Gowin Semiconductor Corporation.
+//All rights reserved.
+//File Title: Post-PnR Simulation Model file
+//GOWIN Version: V1.9.8
+//Created Time: Tue Nov  2 23:09:08 2021
+
+module Gowin_DDR(
+	din,
+	clk,
+	q
+);
+input [0:0] din;
+input clk;
+output [1:0] q;
+wire GND;
+wire VCC;
+wire clk;
+wire [0:0] din;
+wire [0:0] ibuf_o;
+wire [1:0] q;
+VCC VCC_cZ (
+  .V(VCC)
+);
+GND GND_cZ (
+  .G(GND)
+);
+GSR GSR (
+	.GSRI(VCC)
+);
+IBUF \ibuf_gen[0].ibuf_inst  (
+	.I(din[0]),
+	.O(ibuf_o[0])
+);
+IDDR \iddr_gen[0].iddr_inst  (
+	.D(ibuf_o[0]),
+	.CLK(clk),
+	.Q0(q[0]),
+	.Q1(q[1])
+);
+defparam \iddr_gen[0].iddr_inst .Q0_INIT=1'b0;
+defparam \iddr_gen[0].iddr_inst .Q1_INIT=1'b0;
+endmodule

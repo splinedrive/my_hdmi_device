@@ -1,0 +1,18 @@
+<?xml version="1" encoding="UTF-8"?>
+<!DOCTYPE gowin-fpga-project>
+<Project>
+    <Template>FPGA</Template>
+    <Version>5</Version>
+    <Device name="GW1NSR-4C" pn="GW1NSR-LV4CQN48PC7/I6">gw1nsr4c-009</Device>
+    <FileList>
+      <File path="../../ball.v" type="file.verilog" enable="1"/>
+      <File path="../../chip_balls.v" type="file.verilog" enable="1"/>
+      <File path="../../hdmi_device.v" type="file.verilog" enable="1"/>
+      <File path="../../lfsr.v" type="file.verilog" enable="1"/>
+      <File path="../../my_vga_clk_generator.v" type="file.verilog" enable="1"/>
+      <File path="../../my_vga_clk_generator.vh" type="file.verilog" enable="1"/>
+        <File path="src/gowin_pllvr/gowin_pllvr.v" type="file.verilog" enable="1"/>
+        <File path="../../tmds_encoder.v" type="file.verilog" enable="1"/>
+        <File path="../../nano4k.cst" type="file.cst" enable="1"/>
+    </FileList>
+</Project>

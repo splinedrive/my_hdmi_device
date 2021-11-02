@@ -15,7 +15,8 @@ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
-//`define ARTY7 
+//`define ARTY7
+//`define NANO_4K
 `ifdef ICOBOARD
   `define HX8X
 `endif
@@ -44,7 +45,12 @@ module chip_balls(
            input clk_25mhz,
            output [3:0] gpdi_dp,
            output led
-`else
+`elsif NANO_4K
+           input clk_27mhz,
+           output [3:0] hdmi_p,
+           output [3:0] hdmi_n,
+           output       led
+`else /* ulx3s */
            input clk_25mhz,
            output [3:0] gpdi_dp,
            output [7:0] led
@@ -63,6 +69,8 @@ localparam SYSTEM_CLK_MHZ = 25;
 `ifdef HX8X
 localparam DDR_HDMI_TRANSFER = 1;
 `elsif ARTY7
+localparam DDR_HDMI_TRANSFER = 1;
+`elsif NANO_4K
 localparam DDR_HDMI_TRANSFER = 1;
 `else /* ulx3s */
 localparam DDR_HDMI_TRANSFER = 1;
@@ -123,7 +131,15 @@ clk_tmds
         clk_100mhz
     );
 
-
+`elsif NANO_4K
+wire clk = clk_27mhz;
+wire clk_x5;
+wire pclk = clk_27mhz;
+wire tmds_clk = clk_x5;
+Gowin_PLLVR pllvr_i(
+                .clkout(clk_x5), //output clkout 135 MHz
+                .clkin(clk_27mhz) //input clkin
+            );
 `else /* ulx3s */
 wire clk_locked;
 wire [3:0] clocks;
@@ -227,6 +243,17 @@ always @(posedge pclk) begin
 end
 
 assign led = toogle;
+`elsif NANO_4K
+reg [5:0] frame_cnt = 0;
+wire new_frame = (vcnt == 0 && hcnt == 0) ;
+wire fps = (frame_cnt == 59);
+reg toogle = 1'b1;
+always @(posedge pclk) begin
+    if (new_frame) frame_cnt <= fps ? 0 : frame_cnt + 1;
+    toogle <= toogle ^ fps;
+end
+
+assign led = ~toogle;
 `else /* ulx3s */
 reg [31:0] frame_cnt = 0;
 wire new_frame = (vcnt == 0 && hcnt == 0) ;
@@ -244,6 +271,8 @@ assign   led = {8{toogle}};
 /* */
 `ifdef HX8X
 localparam N = 20;
+`elsif NANO_4K
+localparam N = 35;
 `else
 localparam N = 35;
 `endif
@@ -331,6 +360,10 @@ always @(posedge pclk) begin
         vga_red   <= vga_red_test>>1   | (stars | |draw_ball[6:0] | |draw_ball[9:0] | (&vcnt[4:0]|&hcnt[4:0]) ? 8'hff : 8'h0);
         vga_green <= vga_green_test>>1 | (stars | |draw_ball[15:7] ? 8'hff : 8'h0);
         vga_blue  <= vga_blue_test>>1  | (stars | |draw_ball[19:16] | (&vcnt[4:0]|&hcnt[4:0]) ? 8'hff : 8'h0);
+    `elsif NANO_4K
+        vga_red   <= vga_red_test>>1   | (stars | |draw_ball[10:0] | |draw_ball[20:11] | (&vcnt[4:0]|&hcnt[4:0]) ? 8'hff : 8'h0);
+        vga_green <= vga_green_test>>1 | (stars | |draw_ball[20:11] ? 8'hff : 8'h0);
+        vga_blue  <= vga_blue_test>>1  | (stars | |draw_ball[34:21] | (&vcnt[4:0]|&hcnt[4:0]) ? 8'hff : 8'h0);
     `else
         vga_red   <= vga_red_test>>1   | (stars | |draw_ball[10:0] | |draw_ball[20:11] | (&vcnt[4:0]|&hcnt[4:0]) ? 8'hff : 8'h0);
         vga_green <= vga_green_test>>1 | (stars | |draw_ball[20:11] ? 8'hff : 8'h0);
@@ -338,8 +371,8 @@ always @(posedge pclk) begin
     `endif
     end
     else begin
-        vga_red <= 8'h0;
-        vga_blue <= 8'h0;
+        vga_red   <= 8'h0;
+        vga_blue  <= 8'h0;
         vga_green <= 8'h0;
     end
 end
@@ -377,6 +410,12 @@ generate
         SB_LVCMOS SB_LVCMOS_CLK   (.DP(hdmi_p[3]), .DN(hdmi_n[3]), .clk_x5(tmds_clk), .tmds_signal(out_tmds_clk));
     end
 endgenerate
+`elsif NANO_4K
+ODDR red_ddr_i   ( .CLK(tmds_clk), .D0(out_tmds_red[0]  )   , .D1(out_tmds_red[1] )     , .Q0(hdmi_p[2]));//, .Q1(hdmi_n[2]) );
+ODDR blue_ddr_i  ( .CLK(tmds_clk), .D0(out_tmds_blue[0] )   , .D1(out_tmds_blue[1])     , .Q0(hdmi_p[0]));//, .Q1(hdmi_n[0]) );
+ODDR green_ddr_i ( .CLK(tmds_clk), .D0(out_tmds_green[0])   , .D1(out_tmds_green[1] )   , .Q0(hdmi_p[1]));//, .Q1(hdmi_n[1]) );
+ODDR clk_ddr_i   ( .CLK(tmds_clk), .D0(out_tmds_clk[0]  )   , .D1(out_tmds_clk[1])      , .Q0(hdmi_p[3]));//, .Q1(hdmi_n[3]) );
+
 `elsif ARTY7
 generate if (!DDR_HDMI_TRANSFER) begin
         OBUFDS OBUFDS_clock     (.I(out_tmds_clk),    .O(hdmi_p[3]), .OB(hdmi_n[3]));
