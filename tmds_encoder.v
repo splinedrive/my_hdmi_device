@@ -34,7 +34,7 @@ function [3:0] N0;
     integer i;
     begin
         N0 = 0;
-        for (i = 0; i < 8; i++)
+        for (i = 0; i < 8; i = i +1)
             N0 = N0 + !d[i];
     end
 endfunction
@@ -44,7 +44,7 @@ function [3:0] N1;
     integer i;
     begin
         N1 = 0;
-        for (i = 0; i < 8; i++)
+        for (i = 0; i < 8; i = i +1)
             N1 = N1 + d[i];
     end
 endfunction
