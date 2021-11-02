@@ -112,7 +112,7 @@ always @(posedge clk) begin
                 q_out[9] <= 0;
                 q_out[8] <= q_m[8];
                 q_out[7:0] <= q_m[7:0];
-                cnt = cnt_prev + 2*(~q_m[8]) + (N1(q_m[7:0]) - N0(q_m[7:0]));
+                cnt = cnt_prev - 2*(~q_m[8]) + (N1(q_m[7:0]) - N0(q_m[7:0]));
             end /*
                 (cnt_prev > 0 & N1(q_m[7:0]) > N0(q_m[7:0]))) |
                 (cnt_prev < 0 & N0(q_m[7:0]) > N1(q_m[7:0])))
