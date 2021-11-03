@@ -4,7 +4,7 @@
 //GOWIN Version: V1.9.8
 //Part Number: GW1NSR-LV4CQN48PC7/I6
 //Device: GW1NSR-4C
-//Created Time: Wed Nov  3 19:38:02 2021
+//Created Time: Wed Nov  3 20:55:50 2021
 
 module Gowin_PLLVR (clkout, clkin);
 
@@ -44,9 +44,9 @@ defparam pllvr_inst.FCLKIN = "27";
 defparam pllvr_inst.DYN_IDIV_SEL = "false";
 defparam pllvr_inst.IDIV_SEL = 0;
 defparam pllvr_inst.DYN_FBDIV_SEL = "false";
-defparam pllvr_inst.FBDIV_SEL = 9;
+defparam pllvr_inst.FBDIV_SEL = 4;
 defparam pllvr_inst.DYN_ODIV_SEL = "false";
-defparam pllvr_inst.ODIV_SEL = 4;
+defparam pllvr_inst.ODIV_SEL = 8;
 defparam pllvr_inst.PSDA_SEL = "0000";
 defparam pllvr_inst.DYN_DA_EN = "true";
 defparam pllvr_inst.DUTYDA_SEL = "1000";

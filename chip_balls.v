@@ -16,7 +16,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //`define ARTY7
-//`define NANO_4K
+`define NANO_4K
 `ifdef ICOBOARD
   `define HX8X
 `endif
@@ -46,10 +46,10 @@ module chip_balls(
            output [3:0] gpdi_dp,
            output led
 `elsif NANO_4K
-           input clk_27mhz,
-           output [3:0] hdmi_p,
-           output [3:0] hdmi_n,
-           output       led
+          input clk_27mhz,
+          output [3:0] hdmi_p,
+          output [3:0] hdmi_n,
+          output       led
 `else /* ulx3s */
            input clk_25mhz,
            output [3:0] gpdi_dp,
@@ -132,14 +132,14 @@ clk_tmds
     );
 
 `elsif NANO_4K
-wire clk = clk_27mhz;
-wire clk_x5;
-wire pclk = clk_27mhz;
-wire tmds_clk = clk_x5;
-Gowin_PLLVR pllvr_i(
-                .clkout(clk_x5), //output clkout 135 MHz
-                .clkin(clk_27mhz) //input clkin
-            );
+  wire clk = clk_27mhz;
+  wire clk_x5;
+  wire pclk = clk_27mhz;
+  wire tmds_clk = clk_x5;
+  Gowin_PLLVR pllvr_i(
+    .clkout(clk_x5), //output clkout 135 MHz
+    .clkin(clk_27mhz) //input clkin
+  );
 `else /* ulx3s */
 wire clk_locked;
 wire [3:0] clocks;
@@ -411,10 +411,37 @@ generate
     end
 endgenerate
 `elsif NANO_4K
-ODDR red_ddr_i   ( .CLK(tmds_clk), .D0(out_tmds_red[0]  )   , .D1(out_tmds_red[1] )     , .Q0(hdmi_p[2]));//, .Q1(hdmi_n[2]) );
-ODDR blue_ddr_i  ( .CLK(tmds_clk), .D0(out_tmds_blue[0] )   , .D1(out_tmds_blue[1])     , .Q0(hdmi_p[0]));//, .Q1(hdmi_n[0]) );
-ODDR green_ddr_i ( .CLK(tmds_clk), .D0(out_tmds_green[0])   , .D1(out_tmds_green[1] )   , .Q0(hdmi_p[1]));//, .Q1(hdmi_n[1]) );
-ODDR clk_ddr_i   ( .CLK(tmds_clk), .D0(out_tmds_clk[0]  )   , .D1(out_tmds_clk[1])      , .Q0(hdmi_p[3]));//, .Q1(hdmi_n[3]) );
+  // DDR
+ ODDR red_ddr_i   ( .CLK(tmds_clk), .D0(out_tmds_red[0]  )   , .D1(out_tmds_red[1] )     , .Q0(hdmi_p[2]));//, .Q1(hdmi_n[2]) );
+ ODDR blue_ddr_i  ( .CLK(tmds_clk), .D0(out_tmds_blue[0] )   , .D1(out_tmds_blue[1])     , .Q0(hdmi_p[0]));//, .Q1(hdmi_n[0]) );
+ ODDR green_ddr_i ( .CLK(tmds_clk), .D0(out_tmds_green[0])   , .D1(out_tmds_green[1] )   , .Q0(hdmi_p[1]));//, .Q1(hdmi_n[1]) );
+ ODDR clk_ddr_i   ( .CLK(tmds_clk), .D0(out_tmds_clk[0]  )   , .D1(out_tmds_clk[1])      , .Q0(hdmi_p[3]));//, .Q1(hdmi_n[3]) );
+ /*
+ // SDR
+ TLVDS_OBUF red_tlvds_obuf  (
+   .I(out_tmds_red),
+   .O(hdmi_p[2]),
+   .OB(hdmi_n[2])
+ );
+
+ TLVDS_OBUF blue_tlvds_obuf  (
+   .I(out_tmds_blue),
+   .O(hdmi_p[0]),
+   .OB(hdmi_n[0])
+ );
+
+ TLVDS_OBUF green_tlvds_obuf  (
+   .I(out_tmds_green),
+   .O(hdmi_p[1]),
+   .OB(hdmi_n[1])
+ );
+
+ TLVDS_OBUF clk_tlvds_obuf  (
+   .I(out_tmds_clk),
+   .O(hdmi_p[3]),
+   .OB(hdmi_n[3])
+ );
+ */
 
 `elsif ARTY7
 generate if (!DDR_HDMI_TRANSFER) begin
