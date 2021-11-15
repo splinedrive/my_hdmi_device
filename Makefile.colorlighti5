@@ -1,0 +1,30 @@
+PROJ=chip_balls
+
+
+RM         = rm -rf
+VERILOG_FILES = ecp5pll.sv \
+								tmds_encoder.v \
+								my_vga_clk_generator.v \
+								ball.v \
+								hdmi_device.v \
+								lfsr.v\
+
+all: ${PROJ}.bit
+
+%.json: %.v
+	yosys -DCOLORLIGHTI5 -p "synth_ecp5 -json $@" ${VERILOG_FILES} $<
+
+%_out.config: %.json
+	nextpnr-ecp5 --json $< --textcfg $@ --25k --package CABGA381 --lpf colorlighti5.lpf
+
+%.bit: %_out.config
+	#ecppack --compress --freq 125 --input $< --bit $@
+	ecppack --compress --svf ${PROJ}.svf --input $< --bit $@
+
+prog: ${PROJ}.bit
+	ecpdap prog $<
+
+clean:
+	$(RM) -f ${PROJ}.bit ${PROJ}_out.config ${PROJ}.json
+
+.PHONY: prog clean
