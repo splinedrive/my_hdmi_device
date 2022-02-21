@@ -12,7 +12,7 @@ VERILOG_FILES = ecp5pll.sv \
 all: ${PROJ}.bit
 
 %.json: %.v
-	yosys -p "synth_ecp5 -json $@" ${VERILOG_FILES} $<
+	yosys -p "synth_ecp5 -json $@ -top ${PROJ}" ${VERILOG_FILES} $<
 
 %_out.config: %.json
 	nextpnr-ecp5 --json $< --textcfg $@ --85k --package CABGA381 --lpf ulx3s_v20.lpf
