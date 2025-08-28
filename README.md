@@ -1,51 +1,66 @@
-my_hdmi_device is an implementation based of reading fpga4fun, ulx3s dvi (vga2dvi) examples and larries hdmi blackicemx example.
-I learned from reading the code, but I haven't understood too much.
-That is why I rewritten the tmds encoder directly from dvi standard, Page 29. without any problems. And to learn about tmds encoding and why
-we have lvds and what are the problems in general, why we have 8b10b and more.
-The idea to shift and to have faster clock I have seen in all implementations. I learned about DDR and SDR transmission :)
-Howto do it on ice40k I learnd from mystrom and larries example hdmi code.
-The technic of vga, balls and stars I have learned from Steven Hugg (Designing Video Game Hardware in Verilog).
-I used the parts for calculating the vga timings from ulx example code, because normally you see the stupid values fixed in tables.
-I have written all from scratch over the christmas days and I used the hdmi pmod from Luke Wreen as a gift from ultraembedded.
-I want to share what I figured out and works. Maybe the code could be a new base for other projects. Just use tmds_encoder, hdmi_device.h
-and learn from top module and you are prepared for the next project.
+# my\_hdmi\_device
 
-This code runs on blackicemx and ulx3s-85F (but you are able to adjust the Makefile and generating lesser balls).
-I don't want to go deep in thing, because I want to learn many fpga designs in the future. But you have to start with the basics first.
+**my\_hdmi\_device** is an implementation inspired by the FPGA4Fun tutorials, ULX3S DVI (vga2dvi) examples, and Larry’s HDMI BlackIceMX example. I learned by reading the code, although I didn’t fully understand everything at first. That’s why I rewrote the TMDS encoder directly from the DVI standard (Page 29) — without any problems. This helped me understand TMDS encoding, why we use LVDS, the challenges involved, and how 8b/10b encoding fits into the bigger picture.
 
-I have used this pmod for ice40 based fpgas: https://github.com/Wren6991/DVI-PMOD
+The idea of shifting and using a faster clock appears in all implementations I studied. I also learned about DDR and SDR transmission. 🙂 For iCE40, I learned from MyStorm and Larry’s HDMI example code. The VGA “balls and stars” demo technique I picked up from Steven Hugg’s *Designing Video Game Hardware in Verilog*.
 
-Todo: hdmi-audio (island)
+I borrowed parts of the VGA timing calculation from the ULX3S example code, because usually these values are just shown as fixed tables. I wrote everything from scratch over the Christmas holidays, using the HDMI PMOD from Luke Wren (a gift from UltraEmbedded).
 
-ulx3s:
+I want to share what I figured out and got working. Maybe this code can be a new base for other projects. Just use `tmds_encoder`, `hdmi_device.h`, and learn from the top module — then you’ll be ready for your next project.
+
+---
+
+## Supported Boards
+
+This code runs on **BlackIceMX** and **ULX3S-85F** (you can adjust the Makefile to generate fewer “balls” if needed). I don’t want to go too deep into the details, because I want to explore many FPGA designs in the future. But everything starts with the basics.
+
+I used this PMOD for iCE40-based FPGAs:
+👉 [https://github.com/Wren6991/DVI-PMOD](https://github.com/Wren6991/DVI-PMOD)
+
+---
+
+## TODO
+
+* HDMI audio (island mode)
+
+---
+
+## Build Instructions
+
+**ULX3S:**
 make prog
 
-blackicemx:
-
+**BlackIceMX:**
 make -f Makefile.blackicemx prog
 
-icoboard:
-
+**Icoboard:**
 make -f Makefile.icoboard prog
 
-icestick:
-cd icestick__hack
+**iCEstick:**
+cd icestick\_\_hack
 make prog
 
-arty7:
+**Arty7:**
 make -f Makefile.arty7 prog
-But doesn't work, just use vivado SDR/DDR is working
-just use `define ARTY7 in vivado
+⚠️ Currently not working. Use Vivado instead.
+Enable with:
+`define ARTY7`
+DDR/SDR both work.
 
-colorlighti5:
+**Colorlight i5:**
 make -f Makefile.colorlighti5 prog
 
-tangnano4k:
-`define NANO_4K \
-open prj file nano4k/my_hdmi_nano/my_hdmi_nano.gprj \
+**Tang Nano 4K:**
+`define NANO_4K`
+Open project file:
+nano4k/my\_hdmi\_nano/my\_hdmi\_nano.gprj
+
+---
 
 Have fun!
 
-Hirosh
+**Hirosh**
 
 ![hdmi](hdmi.jpg)
+
+
